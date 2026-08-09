@@ -1,6 +1,6 @@
 export const PERSONS = [
   { id: 'nikunj', name: 'Nikunj' },
-  { id: 'mansukhbhai', name: 'Mansukhbhai' },
+  { id: 'mansukhmasa', name: 'Mansukhmasa' },
 ]
 
 export const EXPENSE_CATEGORIES = [
