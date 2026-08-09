@@ -95,10 +95,11 @@ export function DataProvider({ children }) {
     if (err) {
       setError(err.message)
       setSyncing(false)
-      return
+      return false
     }
     setTransactions((prev) => prev.map((tx) => (tx.id === id ? toLocal(data) : tx)))
     setSyncing(false)
+    return true
   }
 
   async function deleteTransaction(id) {
@@ -108,10 +109,11 @@ export function DataProvider({ children }) {
     if (err) {
       setError(err.message)
       setSyncing(false)
-      return
+      return false
     }
     setTransactions((prev) => prev.filter((tx) => tx.id !== id))
     setSyncing(false)
+    return true
   }
 
   const personTransactions = useMemo(

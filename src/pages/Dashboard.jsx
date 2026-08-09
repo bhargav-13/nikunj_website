@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Plus, TrendingDown, TrendingUp, RefreshCw, Loader2 } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useModal } from '../context/ModalContext'
-import { sumByPeriod, sumLastNDays, getPeriodRanges } from '../lib/dateUtils'
-import { isWithinInterval, parseISO, startOfDay } from 'date-fns'
+import { sumByPeriod, sumLastNDays, getPeriodRanges, parseDateKey } from '../lib/dateUtils'
+import { isWithinInterval, startOfDay } from 'date-fns'
 import StatCard from '../components/StatCard'
 import CategoryBreakdown from '../components/CategoryBreakdown'
 import TransactionList from '../components/TransactionList'
@@ -23,7 +23,7 @@ export default function Dashboard() {
 
   const ranges = getPeriodRanges()
   const monthTransactions = transactions.filter((tx) =>
-    isWithinInterval(startOfDay(parseISO(tx.date)), ranges.month),
+    isWithinInterval(startOfDay(parseDateKey(tx.date)), ranges.month),
   )
 
   const recent = [...transactions]

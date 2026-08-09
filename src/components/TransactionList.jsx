@@ -1,5 +1,5 @@
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
-import { groupByDate, formatDayLabel } from '../lib/dateUtils'
+import { ArrowDownLeft, ArrowUpRight, Clock } from 'lucide-react'
+import { groupByDate, formatDayLabel, formatCreatedAtTime } from '../lib/dateUtils'
 import { categoryById } from '../lib/constants'
 import { useModal } from '../context/ModalContext'
 
@@ -35,6 +35,7 @@ export default function TransactionList({ transactions, emptyMessage = 'No trans
             <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-1)]">
               {txs.map((tx, i) => {
                 const cat = tx.type === 'expense' ? categoryById(tx.category) : null
+                const timeStr = formatCreatedAtTime(tx.createdAt)
                 return (
                   <button
                     key={tx.id}
@@ -56,9 +57,18 @@ export default function TransactionList({ transactions, emptyMessage = 'No trans
                       <p className="truncate text-sm font-medium text-[var(--text-primary)]">
                         {tx.note || (tx.type === 'income' ? 'Income' : cat?.label)}
                       </p>
-                      <p className="text-[11px] text-[var(--text-muted)]">
-                        {tx.type === 'expense' ? cat?.label : 'Income'}
-                      </p>
+                      <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
+                        <span>{tx.type === 'expense' ? cat?.label : 'Income'}</span>
+                        {timeStr && (
+                          <>
+                            <span className="text-[var(--border-strong)]">·</span>
+                            <span className="flex items-center gap-0.5">
+                              <Clock size={9} className="opacity-60" />
+                              {timeStr}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                     <p
                       className="tabular-nums flex-none text-sm font-semibold"

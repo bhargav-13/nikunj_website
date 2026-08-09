@@ -1,6 +1,5 @@
 import {
   format,
-  parseISO,
   startOfDay,
   startOfWeek,
   endOfWeek,
@@ -9,6 +8,11 @@ import {
   subDays,
   isWithinInterval,
 } from 'date-fns'
+
+export function parseDateKey(dateKey) {
+  const [y, m, d] = dateKey.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
 
 export function toDateKey(date) {
   return format(date, 'yyyy-MM-dd')
@@ -19,7 +23,7 @@ export function todayKey() {
 }
 
 export function formatDisplayDate(dateKey) {
-  return format(parseISO(dateKey), 'd MMM yyyy')
+  return format(parseDateKey(dateKey), 'd MMM yyyy')
 }
 
 export function formatDayLabel(dateKey) {
@@ -27,11 +31,22 @@ export function formatDayLabel(dateKey) {
   const yesterday = toDateKey(subDays(new Date(), 1))
   if (dateKey === today) return 'Today'
   if (dateKey === yesterday) return 'Yesterday'
-  return format(parseISO(dateKey), 'EEEE, d MMM yyyy')
+  return format(parseDateKey(dateKey), 'EEEE, d MMM yyyy')
+}
+
+export function formatCreatedAt(isoString) {
+  if (!isoString) return ''
+  const d = new Date(isoString)
+  return format(d, 'd MMM yyyy, h:mm a')
+}
+
+export function formatCreatedAtTime(isoString) {
+  if (!isoString) return ''
+  return format(new Date(isoString), 'h:mm a')
 }
 
 function dateKeyInInterval(dateKey, interval) {
-  return isWithinInterval(startOfDay(parseISO(dateKey)), interval)
+  return isWithinInterval(startOfDay(parseDateKey(dateKey)), interval)
 }
 
 export function getPeriodRanges(reference = new Date()) {

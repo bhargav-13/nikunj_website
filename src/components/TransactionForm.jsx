@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Trash2, Loader2 } from 'lucide-react'
+import { X, Trash2, Loader2, Clock } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useModal } from '../context/ModalContext'
 import { EXPENSE_CATEGORIES } from '../lib/constants'
-import { todayKey } from '../lib/dateUtils'
+import { todayKey, formatCreatedAt } from '../lib/dateUtils'
 
 export default function TransactionForm() {
   const { formState, close } = useModal()
@@ -51,21 +51,24 @@ export default function TransactionForm() {
     setSubmitting(true)
     const payload = { type, amount: numAmount, date, category: type === 'expense' ? category : null, note }
 
+    let success
     if (isEdit) {
-      await updateTransaction(tx.id, payload)
+      success = await updateTransaction(tx.id, payload)
     } else {
-      await addTransaction(payload)
+      success = await addTransaction(payload)
     }
     setSubmitting(false)
-    close()
+    if (success) close()
+    else setError('Failed to save. Check your connection.')
   }
 
   async function handleDelete() {
     if (tx && confirm('Delete this entry?')) {
       setSubmitting(true)
-      await deleteTransaction(tx.id)
+      const success = await deleteTransaction(tx.id)
       setSubmitting(false)
-      close()
+      if (success) close()
+      else setError('Failed to delete. Check your connection.')
     }
   }
 
@@ -92,6 +95,14 @@ export default function TransactionForm() {
             <X size={20} />
           </button>
         </div>
+
+        {/* Audit info when editing */}
+        {isEdit && tx?.createdAt && (
+          <div className="mb-4 flex items-center gap-1.5 rounded-lg bg-[var(--surface-2)] px-3 py-2 text-[11px] text-[var(--text-muted)]">
+            <Clock size={11} className="flex-none opacity-60" />
+            Created {formatCreatedAt(tx.createdAt)}
+          </div>
+        )}
 
         {/* Type toggle */}
         {!isEdit && (
