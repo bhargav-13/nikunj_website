@@ -1,10 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { DataProvider, useData } from './context/DataContext'
 import { ModalProvider } from './context/ModalContext'
+import { MaterialsProvider } from './context/MaterialsContext'
+import { MaterialModalProvider } from './context/MaterialModalContext'
 import AppShell from './components/AppShell'
 import PersonSelect from './pages/PersonSelect'
 import Dashboard from './pages/Dashboard'
 import Transactions from './pages/Transactions'
+import Materials from './pages/Materials'
 
 function RequirePerson({ children }) {
   const { personId } = useData()
@@ -36,6 +39,22 @@ function AppRoutes() {
               <AppShell>
                 <Transactions />
               </AppShell>
+            </ModalProvider>
+          </RequirePerson>
+        }
+      />
+      <Route
+        path="/materials"
+        element={
+          <RequirePerson>
+            <ModalProvider>
+              <MaterialsProvider>
+                <MaterialModalProvider>
+                  <AppShell>
+                    <Materials />
+                  </AppShell>
+                </MaterialModalProvider>
+              </MaterialsProvider>
             </ModalProvider>
           </RequirePerson>
         }

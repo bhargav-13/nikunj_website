@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Receipt, Plus, Users, HardHat, RefreshCw, Loader2, AlertCircle, X } from 'lucide-react'
+import { LayoutDashboard, Receipt, Plus, Users, HardHat, RefreshCw, Loader2, AlertCircle, X, Boxes } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useModal } from '../context/ModalContext'
 import { personById } from '../lib/constants'
@@ -8,6 +8,7 @@ import TransactionForm from './TransactionForm'
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/transactions', label: 'Transactions', icon: Receipt },
+  { to: '/materials', label: 'Materials', icon: Boxes },
 ]
 
 export default function AppShell({ children }) {
@@ -159,6 +160,18 @@ export default function AppShell({ children }) {
         >
           <Receipt size={20} />
           History
+        </NavLink>
+
+        <NavLink
+          to="/materials"
+          className={({ isActive }) =>
+            `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium transition-colors ${
+              isActive ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'
+            }`
+          }
+        >
+          <Boxes size={20} />
+          Materials
         </NavLink>
       </nav>
 

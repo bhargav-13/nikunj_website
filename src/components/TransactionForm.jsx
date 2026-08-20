@@ -4,6 +4,8 @@ import { useData } from '../context/DataContext'
 import { useModal } from '../context/ModalContext'
 import { EXPENSE_CATEGORIES } from '../lib/constants'
 import { todayKey, formatCreatedAt } from '../lib/dateUtils'
+import { listAttachments } from '../lib/attachments'
+import AttachmentPicker from './AttachmentPicker'
 
 export default function TransactionForm() {
   const { formState, close } = useModal()
@@ -19,6 +21,8 @@ export default function TransactionForm() {
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [savedTx, setSavedTx] = useState(null)
+  const [attachments, setAttachments] = useState([])
   const amountRef = useRef(null)
 
   useEffect(() => {
@@ -30,6 +34,11 @@ export default function TransactionForm() {
     setNote(tx?.note || '')
     setError('')
     setSubmitting(false)
+    setSavedTx(tx || null)
+    setAttachments([])
+    if (tx) {
+      listAttachments(tx.id).then(setAttachments).catch(() => {})
+    }
     const t = setTimeout(() => amountRef.current?.focus(), 100)
     return () => clearTimeout(t)
   }, [formState, tx])
@@ -51,14 +60,17 @@ export default function TransactionForm() {
     setSubmitting(true)
     const payload = { type, amount: numAmount, date, category: type === 'expense' ? category : null, note }
 
-    let success
     if (isEdit) {
-      success = await updateTransaction(tx.id, payload)
-    } else {
-      success = await addTransaction(payload)
+      const success = await updateTransaction(tx.id, payload)
+      setSubmitting(false)
+      if (success) close()
+      else setError('Failed to save. Check your connection.')
+      return
     }
+
+    const created = await addTransaction(payload)
     setSubmitting(false)
-    if (success) close()
+    if (created) setSavedTx(created)
     else setError('Failed to save. Check your connection.')
   }
 
@@ -204,6 +216,16 @@ export default function TransactionForm() {
           />
         </label>
 
+        {/* Attachments — available once the entry exists (after first save, or when editing) */}
+        {savedTx && (
+          <AttachmentPicker
+            transactionId={savedTx.id}
+            attachments={attachments}
+            onChange={setAttachments}
+            disabled={submitting}
+          />
+        )}
+
         {error && <p className="mb-3 text-sm font-medium text-[var(--critical)]">{error}</p>}
 
         {/* Actions */}
@@ -219,15 +241,26 @@ export default function TransactionForm() {
               <Trash2 size={18} />
             </button>
           )}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl py-3.5 font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-[0.97] disabled:opacity-70"
-            style={{ backgroundColor: type === 'income' ? 'var(--good)' : 'var(--critical)' }}
-          >
-            {submitting && <Loader2 size={16} className="animate-spin" />}
-            {isEdit ? 'Save Changes' : type === 'income' ? 'Add Income' : 'Add Expense'}
-          </button>
+          {!isEdit && savedTx ? (
+            <button
+              type="button"
+              onClick={close}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl py-3.5 font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-[0.97]"
+              style={{ backgroundColor: type === 'income' ? 'var(--good)' : 'var(--critical)' }}
+            >
+              Done
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl py-3.5 font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-[0.97] disabled:opacity-70"
+              style={{ backgroundColor: type === 'income' ? 'var(--good)' : 'var(--critical)' }}
+            >
+              {submitting && <Loader2 size={16} className="animate-spin" />}
+              {isEdit ? 'Save Changes' : type === 'income' ? 'Add Income' : 'Add Expense'}
+            </button>
+          )}
         </div>
       </form>
     </div>
