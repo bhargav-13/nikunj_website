@@ -28,10 +28,11 @@ export default function MaterialForm() {
 
   useEffect(() => {
     if (!formState) return
-    setMaterialId(log?.materialId || MATERIAL_TYPES[0].id)
+    const initialMaterialId = log?.materialId || formState.materialId || MATERIAL_TYPES[0].id
+    setMaterialId(initialMaterialId)
     setDirection(log?.direction || 'in')
     setQuantity(log ? String(log.quantity) : '')
-    setUnit(log?.unit || defaultUnitFor(MATERIAL_TYPES[0].id))
+    setUnit(log?.unit || defaultUnitFor(initialMaterialId))
     setDate(log?.date || todayKey())
     setNote(log?.note || '')
     setError('')

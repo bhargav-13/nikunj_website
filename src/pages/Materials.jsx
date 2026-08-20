@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Loader2, Plus } from 'lucide-react'
+import { Loader2, Plus, ListFilter } from 'lucide-react'
 import { useMaterials } from '../context/MaterialsContext'
 import { useMaterialModal } from '../context/MaterialModalContext'
 import { MATERIAL_TYPES } from '../lib/materials'
@@ -30,7 +30,7 @@ export default function Materials() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-[var(--text-primary)] sm:text-2xl">Materials</h1>
-          <p className="text-xs text-[var(--text-muted)] sm:text-sm">Track cement, reti, kapachi, lokhand, eet</p>
+          <p className="text-xs text-[var(--text-muted)] sm:text-sm">Track cement, reti, kapachi, steel, brick</p>
         </div>
         <button
           onClick={openAdd}
@@ -40,7 +40,7 @@ export default function Materials() {
         </button>
       </div>
 
-      {/* Stock summary */}
+      {/* Stock summary — tap a material to log usage for it, tap the count to see its history */}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
         {MATERIAL_TYPES.map((m) => {
           const stock = stockByMaterial[m.id] || {}
@@ -48,14 +48,34 @@ export default function Materials() {
           return (
             <button
               key={m.id}
-              onClick={() => setMaterialFilter(materialFilter === m.id ? 'all' : m.id)}
-              className={`rounded-xl border p-3 text-left transition-colors ${
+              onClick={() => openAdd(m.id)}
+              className={`rounded-xl border p-3 text-left transition-colors active:scale-[0.98] ${
                 materialFilter === m.id
                   ? 'border-[var(--accent)] bg-[var(--accent-bg)]'
                   : 'border-[var(--border)] bg-[var(--surface-1)] hover:border-[var(--border-strong)]'
               }`}
             >
-              <p className="text-[11px] font-medium text-[var(--text-muted)]">{m.label}</p>
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-[11px] font-medium text-[var(--text-muted)]">{m.label}</p>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setMaterialFilter(materialFilter === m.id ? 'all' : m.id)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter' && e.key !== ' ') return
+                    e.stopPropagation()
+                    e.preventDefault()
+                    setMaterialFilter(materialFilter === m.id ? 'all' : m.id)
+                  }}
+                  className="rounded p-0.5 text-[var(--text-muted)] hover:text-[var(--accent)]"
+                  aria-label={`View ${m.label} history`}
+                >
+                  <ListFilter size={12} />
+                </span>
+              </div>
               {entries.length === 0 ? (
                 <p className="tabular-nums text-lg font-bold text-[var(--text-primary)]">0</p>
               ) : (
