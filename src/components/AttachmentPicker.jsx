@@ -2,9 +2,13 @@ import { useRef, useState } from 'react'
 import { Paperclip, FileText, X, Loader2, Expand } from 'lucide-react'
 import { isImage, uploadAttachment, deleteAttachment } from '../lib/attachments'
 
-const ACCEPT = 'image/*,application/pdf'
+const VARIANTS = {
+  transaction: { accept: 'image/*,application/pdf', label: 'Documents (optional)', button: 'Attach photo or PDF' },
+  material: { accept: 'image/*', label: 'Photos (optional)', button: 'Attach photo' },
+}
 
-export default function AttachmentPicker({ transactionId, attachments, onChange, disabled }) {
+export default function AttachmentPicker({ ownerId, kind = 'transaction', attachments, onChange, disabled }) {
+  const variant = VARIANTS[kind] ?? VARIANTS.transaction
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [lightbox, setLightbox] = useState(null)
@@ -19,7 +23,7 @@ export default function AttachmentPicker({ transactionId, attachments, onChange,
     setError('')
     try {
       for (const file of files) {
-        const uploaded = await uploadAttachment(transactionId, file)
+        const uploaded = await uploadAttachment(ownerId, file, kind)
         onChange((prev) => [...prev, uploaded])
       }
     } catch {
@@ -32,7 +36,7 @@ export default function AttachmentPicker({ transactionId, attachments, onChange,
   async function handleRemove(attachment) {
     if (!confirm('Remove this document?')) return
     try {
-      await deleteAttachment(attachment)
+      await deleteAttachment(attachment, kind)
       onChange((prev) => prev.filter((a) => a.id !== attachment.id))
     } catch {
       setError('Failed to remove. Check your connection.')
@@ -42,7 +46,7 @@ export default function AttachmentPicker({ transactionId, attachments, onChange,
   return (
     <div className="mb-4">
       <span className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-[var(--text-muted)]">
-        Documents (optional)
+        {variant.label}
       </span>
 
       {attachments.length > 0 && (
@@ -93,12 +97,12 @@ export default function AttachmentPicker({ transactionId, attachments, onChange,
         className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--border-strong)] py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-2)] active:scale-[0.98] transition-all disabled:opacity-60"
       >
         {uploading ? <Loader2 size={15} className="animate-spin" /> : <Paperclip size={15} />}
-        {uploading ? 'Uploading...' : 'Attach photo or PDF'}
+        {uploading ? 'Uploading...' : variant.button}
       </button>
       <input
         ref={inputRef}
         type="file"
-        accept={ACCEPT}
+        accept={variant.accept}
         multiple
         onChange={handleFiles}
         className="hidden"
