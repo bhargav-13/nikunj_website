@@ -1,15 +1,17 @@
 import { useMemo, useState } from 'react'
-import { Loader2, Plus, ListFilter } from 'lucide-react'
+import { Loader2, Plus, ListFilter, NotebookPen } from 'lucide-react'
 import { useMaterials } from '../context/MaterialsContext'
 import { useMaterialModal } from '../context/MaterialModalContext'
 import { MATERIAL_TYPES } from '../lib/materials'
 import MaterialList from '../components/MaterialList'
 import MaterialForm from '../components/MaterialForm'
+import MaterialNotes from '../components/MaterialNotes'
 
 export default function Materials() {
-  const { logs, stockByMaterial, loading } = useMaterials()
+  const { logs, stockByMaterial, notes, loading } = useMaterials()
   const { openAdd } = useMaterialModal()
   const [materialFilter, setMaterialFilter] = useState('all')
+  const [notesFor, setNotesFor] = useState(null)
 
   const filtered = useMemo(
     () => (materialFilter === 'all' ? logs : logs.filter((l) => l.materialId === materialFilter)),
@@ -45,6 +47,7 @@ export default function Materials() {
         {MATERIAL_TYPES.map((m) => {
           const stock = stockByMaterial[m.id] || {}
           const entries = Object.entries(stock).filter(([, qty]) => qty !== 0)
+          const hasNote = Boolean(notes[m.id]?.note)
           return (
             <button
               key={m.id}
@@ -57,23 +60,43 @@ export default function Materials() {
             >
               <div className="flex items-center justify-between gap-1">
                 <p className="text-[11px] font-medium text-[var(--text-muted)]">{m.label}</p>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setMaterialFilter(materialFilter === m.id ? 'all' : m.id)
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key !== 'Enter' && e.key !== ' ') return
-                    e.stopPropagation()
-                    e.preventDefault()
-                    setMaterialFilter(materialFilter === m.id ? 'all' : m.id)
-                  }}
-                  className="rounded p-0.5 text-[var(--text-muted)] hover:text-[var(--accent)]"
-                  aria-label={`View ${m.label} history`}
-                >
-                  <ListFilter size={12} />
+                <span className="flex items-center gap-0.5">
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setNotesFor(m.id)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter' && e.key !== ' ') return
+                      e.stopPropagation()
+                      e.preventDefault()
+                      setNotesFor(m.id)
+                    }}
+                    className={`rounded p-0.5 hover:text-[var(--accent)] ${hasNote ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'}`}
+                    aria-label={`${m.label} notes`}
+                  >
+                    <NotebookPen size={12} />
+                  </span>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setMaterialFilter(materialFilter === m.id ? 'all' : m.id)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter' && e.key !== ' ') return
+                      e.stopPropagation()
+                      e.preventDefault()
+                      setMaterialFilter(materialFilter === m.id ? 'all' : m.id)
+                    }}
+                    className="rounded p-0.5 text-[var(--text-muted)] hover:text-[var(--accent)]"
+                    aria-label={`View ${m.label} history`}
+                  >
+                    <ListFilter size={12} />
+                  </span>
                 </span>
               </div>
               {entries.length === 0 ? (
@@ -99,9 +122,22 @@ export default function Materials() {
         </button>
       )}
 
+      {materialFilter !== 'all' && notes[materialFilter]?.note && (
+        <button
+          onClick={() => setNotesFor(materialFilter)}
+          className="rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-3 text-left hover:border-[var(--border-strong)]"
+        >
+          <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            <NotebookPen size={12} /> Notes
+          </p>
+          <p className="whitespace-pre-wrap text-sm text-[var(--text-primary)]">{notes[materialFilter].note}</p>
+        </button>
+      )}
+
       <MaterialList logs={filtered} emptyMessage="No material logs match this filter." />
 
       <MaterialForm />
+      <MaterialNotes materialId={notesFor} onClose={() => setNotesFor(null)} />
     </div>
   )
 }

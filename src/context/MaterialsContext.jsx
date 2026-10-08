@@ -20,6 +20,7 @@ function toLocal(row) {
 
 export function MaterialsProvider({ children }) {
   const [logs, setLogs] = useState([])
+  const [notes, setNotes] = useState({}) // { [materialId]: { note, updatedBy, updatedAt } }
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState(null)
@@ -41,9 +42,42 @@ export function MaterialsProvider({ children }) {
     setLoading(false)
   }, [])
 
+  const fetchNotes = useCallback(async () => {
+    const { data, error: err } = await supabase.from('material_notes').select('*')
+    if (err) return // notes are optional; don't block the logs view
+    setNotes(
+      Object.fromEntries(
+        data.map((row) => [row.material_id, { note: row.note || '', updatedBy: row.updated_by, updatedAt: row.updated_at }]),
+      ),
+    )
+  }, [])
+
   useEffect(() => {
     fetchLogs()
-  }, [fetchLogs])
+    fetchNotes()
+  }, [fetchLogs, fetchNotes])
+
+  async function saveNote(materialId, note, personId) {
+    setSyncing(true)
+    setError(null)
+    const row = {
+      material_id: materialId,
+      note: note.trim(),
+      updated_by: personId,
+      updated_at: new Date().toISOString(),
+    }
+    const { data, error: err } = await supabase.from('material_notes').upsert(row).select().single()
+    setSyncing(false)
+    if (err) {
+      setError(err.message)
+      return false
+    }
+    setNotes((prev) => ({
+      ...prev,
+      [materialId]: { note: data.note || '', updatedBy: data.updated_by, updatedAt: data.updated_at },
+    }))
+    return true
+  }
 
   async function addLog({ personId, materialId, direction, quantity, unit, date, note }) {
     setSyncing(true)
@@ -122,6 +156,8 @@ export function MaterialsProvider({ children }) {
   const value = {
     logs,
     stockByMaterial,
+    notes,
+    saveNote,
     addLog,
     updateLog,
     deleteLog,
@@ -129,7 +165,10 @@ export function MaterialsProvider({ children }) {
     syncing,
     error,
     clearError: () => setError(null),
-    refresh: fetchLogs,
+    refresh: () => {
+      fetchLogs()
+      fetchNotes()
+    },
   }
 
   return <MaterialsContext.Provider value={value}>{children}</MaterialsContext.Provider>
