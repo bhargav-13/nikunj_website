@@ -5,7 +5,7 @@ import { useMaterialModal } from '../context/MaterialModalContext'
 import { useData } from '../context/DataContext'
 import { MATERIAL_TYPES, defaultUnitFor } from '../lib/materials'
 import { todayKey } from '../lib/dateUtils'
-import { listAttachments } from '../lib/attachments'
+import { listAttachments, uploadAttachment } from '../lib/attachments'
 import AttachmentPicker from './AttachmentPicker'
 
 export default function MaterialForm() {
@@ -81,9 +81,30 @@ export default function MaterialForm() {
     }
 
     const created = await addLog(payload)
+    if (!created) {
+      setSubmitting(false)
+      setError('Failed to save. Check your connection.')
+      return
+    }
+
+    // Upload photos picked before saving, now that the entry has an id.
+    const pending = attachments.filter((a) => a.pending)
+    const uploaded = []
+    try {
+      for (const a of pending) {
+        uploaded.push(await uploadAttachment(created.id, a.file, 'material'))
+        URL.revokeObjectURL(a.url)
+      }
+    } catch {
+      // Entry is saved; keep the form open so the remaining photos can be retried.
+      setSavedLog(created)
+      setAttachments(uploaded)
+      setSubmitting(false)
+      setError('Entry saved, but some photos failed to upload. Try attaching them again.')
+      return
+    }
     setSubmitting(false)
-    if (created) setSavedLog(created)
-    else setError('Failed to save. Check your connection.')
+    close()
   }
 
   async function handleDelete() {
@@ -228,16 +249,14 @@ export default function MaterialForm() {
           />
         </label>
 
-        {/* Photos — available once the entry exists (after first save, or when editing) */}
-        {savedLog && (
-          <AttachmentPicker
-            ownerId={savedLog.id}
-            kind="material"
-            attachments={attachments}
-            onChange={setAttachments}
-            disabled={submitting}
-          />
-        )}
+        {/* Photos — picked before saving are uploaded once the entry is created */}
+        <AttachmentPicker
+          ownerId={savedLog?.id}
+          kind="material"
+          attachments={attachments}
+          onChange={setAttachments}
+          disabled={submitting}
+        />
 
         {error && <p className="mb-3 text-sm font-medium text-[var(--critical)]">{error}</p>}
 

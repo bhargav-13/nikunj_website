@@ -19,6 +19,22 @@ export default function AttachmentPicker({ ownerId, kind = 'transaction', attach
     e.target.value = ''
     if (files.length === 0) return
 
+    // No owner yet (entry not saved): keep files locally; the form uploads them after saving.
+    if (!ownerId) {
+      onChange((prev) => [
+        ...prev,
+        ...files.map((file) => ({
+          id: crypto.randomUUID(),
+          pending: true,
+          file,
+          fileName: file.name,
+          fileType: file.type,
+          url: URL.createObjectURL(file),
+        })),
+      ])
+      return
+    }
+
     setUploading(true)
     setError('')
     try {
@@ -34,6 +50,11 @@ export default function AttachmentPicker({ ownerId, kind = 'transaction', attach
   }
 
   async function handleRemove(attachment) {
+    if (attachment.pending) {
+      URL.revokeObjectURL(attachment.url)
+      onChange((prev) => prev.filter((a) => a.id !== attachment.id))
+      return
+    }
     if (!confirm('Remove this document?')) return
     try {
       await deleteAttachment(attachment, kind)
