@@ -6,6 +6,7 @@ const BUCKET = 'attachments'
 const OWNERS = {
   transaction: { table: 'transaction_attachments', fk: 'transaction_id', prefix: '' },
   material: { table: 'material_attachments', fk: 'material_log_id', prefix: 'materials/' },
+  note: { table: 'note_attachments', fk: 'note_id', prefix: 'notes/' },
 }
 
 function ownerConfig(kind) {
@@ -76,4 +77,25 @@ export async function deleteAttachment(attachment, kind = 'transaction') {
   await supabase.storage.from(BUCKET).remove([attachment.path])
   const { error } = await supabase.from(table).delete().eq('id', attachment.id)
   if (error) throw error
+}
+
+// Upload files picked before the owner existed (AttachmentPicker "pending" items).
+// Returns the uploaded attachments; on failure throws with `uploaded` attached so callers can keep them.
+export async function uploadPending(ownerId, attachments, kind) {
+  const uploaded = []
+  for (const a of attachments.filter((x) => x.pending)) {
+    try {
+      uploaded.push(await uploadAttachment(ownerId, a.file, kind))
+    } catch (err) {
+      err.uploaded = uploaded
+      throw err
+    }
+    URL.revokeObjectURL(a.url)
+  }
+  return uploaded
+}
+
+export async function deleteAllAttachments(ownerId, kind) {
+  const list = await listAttachments(ownerId, kind)
+  if (list.length > 0) await supabase.storage.from(BUCKET).remove(list.map((a) => a.path))
 }

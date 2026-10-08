@@ -5,6 +5,7 @@ import { isImage, uploadAttachment, deleteAttachment } from '../lib/attachments'
 const VARIANTS = {
   transaction: { accept: 'image/*,application/pdf', label: 'Documents (optional)', button: 'Attach photo or PDF' },
   material: { accept: 'image/*', label: 'Photos (optional)', button: 'Attach photo' },
+  note: { accept: 'image/*,application/pdf', label: 'Photos & documents', button: 'Attach photo or PDF' },
 }
 
 export default function AttachmentPicker({ ownerId, kind = 'transaction', attachments, onChange, disabled }) {

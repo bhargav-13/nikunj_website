@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Receipt, Plus, Users, HardHat, RefreshCw, Loader2, AlertCircle, X, Boxes } from 'lucide-react'
+import { LayoutDashboard, Receipt, Plus, Users, HardHat, RefreshCw, Loader2, AlertCircle, X, Boxes, StickyNote } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useModal } from '../context/ModalContext'
 import { personById } from '../lib/constants'
@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/transactions', label: 'Transactions', icon: Receipt },
   { to: '/materials', label: 'Materials', icon: Boxes },
+  { to: '/notes', label: 'Notes', icon: StickyNote },
 ]
 
 export default function AppShell({ children }) {
@@ -142,14 +143,6 @@ export default function AppShell({ children }) {
           Dashboard
         </NavLink>
 
-        <button
-          onClick={() => openAdd('expense')}
-          className="-mt-5 flex h-13 w-13 flex-none items-center justify-center rounded-full bg-[var(--critical)] text-white shadow-[var(--shadow-lg)] active:scale-90 transition-transform"
-          aria-label="Add expense"
-        >
-          <Plus size={26} />
-        </button>
-
         <NavLink
           to="/transactions"
           className={({ isActive }) =>
@@ -162,6 +155,14 @@ export default function AppShell({ children }) {
           History
         </NavLink>
 
+        <button
+          onClick={() => openAdd('expense')}
+          className="-mt-5 flex h-13 w-13 flex-none items-center justify-center rounded-full bg-[var(--critical)] text-white shadow-[var(--shadow-lg)] active:scale-90 transition-transform"
+          aria-label="Add expense"
+        >
+          <Plus size={26} />
+        </button>
+
         <NavLink
           to="/materials"
           className={({ isActive }) =>
@@ -172,6 +173,18 @@ export default function AppShell({ children }) {
         >
           <Boxes size={20} />
           Materials
+        </NavLink>
+
+        <NavLink
+          to="/notes"
+          className={({ isActive }) =>
+            `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium transition-colors ${
+              isActive ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'
+            }`
+          }
+        >
+          <StickyNote size={20} />
+          Notes
         </NavLink>
       </nav>
 

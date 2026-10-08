@@ -8,6 +8,7 @@ import PersonSelect from './pages/PersonSelect'
 import Dashboard from './pages/Dashboard'
 import Transactions from './pages/Transactions'
 import Materials from './pages/Materials'
+import Notes from './pages/Notes'
 
 function RequirePerson({ children }) {
   const { personId } = useData()
@@ -55,6 +56,18 @@ function AppRoutes() {
                   </AppShell>
                 </MaterialModalProvider>
               </MaterialsProvider>
+            </ModalProvider>
+          </RequirePerson>
+        }
+      />
+      <Route
+        path="/notes"
+        element={
+          <RequirePerson>
+            <ModalProvider>
+              <AppShell>
+                <Notes />
+              </AppShell>
             </ModalProvider>
           </RequirePerson>
         }

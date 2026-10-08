@@ -5,7 +5,7 @@ import { useMaterialModal } from '../context/MaterialModalContext'
 import { useData } from '../context/DataContext'
 import { MATERIAL_TYPES, defaultUnitFor } from '../lib/materials'
 import { todayKey } from '../lib/dateUtils'
-import { listAttachments, uploadAttachment } from '../lib/attachments'
+import { listAttachments, uploadPending } from '../lib/attachments'
 import AttachmentPicker from './AttachmentPicker'
 
 export default function MaterialForm() {
@@ -88,17 +88,12 @@ export default function MaterialForm() {
     }
 
     // Upload photos picked before saving, now that the entry has an id.
-    const pending = attachments.filter((a) => a.pending)
-    const uploaded = []
     try {
-      for (const a of pending) {
-        uploaded.push(await uploadAttachment(created.id, a.file, 'material'))
-        URL.revokeObjectURL(a.url)
-      }
-    } catch {
+      await uploadPending(created.id, attachments, 'material')
+    } catch (err) {
       // Entry is saved; keep the form open so the remaining photos can be retried.
       setSavedLog(created)
-      setAttachments(uploaded)
+      setAttachments(err.uploaded ?? [])
       setSubmitting(false)
       setError('Entry saved, but some photos failed to upload. Try attaching them again.')
       return
