@@ -2,31 +2,49 @@ import { supabase } from './supabase'
 
 const BUCKET = 'attachments'
 
-export function isImage(fileType) {
-  return fileType.startsWith('image/')
+// Each owner kind stores its attachment rows in its own table, keyed by a foreign key column.
+const OWNERS = {
+  transaction: { table: 'transaction_attachments', fk: 'transaction_id', prefix: '' },
+  material: { table: 'material_attachments', fk: 'material_log_id', prefix: 'materials/' },
 }
 
-export async function listAttachments(transactionId) {
-  const { data, error } = await supabase
-    .from('transaction_attachments')
-    .select('*')
-    .eq('transaction_id', transactionId)
-    .order('created_at', { ascending: true })
-  if (error) throw error
-  return data.map((row) => ({
+function ownerConfig(kind) {
+  const config = OWNERS[kind]
+  if (!config) throw new Error(`Unknown attachment owner: ${kind}`)
+  return config
+}
+
+function toLocal(row, fk) {
+  return {
     id: row.id,
-    transactionId: row.transaction_id,
+    ownerId: row[fk],
     path: row.path,
     fileName: row.file_name,
     fileType: row.file_type,
     createdAt: row.created_at,
     url: supabase.storage.from(BUCKET).getPublicUrl(row.path).data.publicUrl,
-  }))
+  }
 }
 
-export async function uploadAttachment(transactionId, file) {
+export function isImage(fileType) {
+  return fileType.startsWith('image/')
+}
+
+export async function listAttachments(ownerId, kind = 'transaction') {
+  const { table, fk } = ownerConfig(kind)
+  const { data, error } = await supabase
+    .from(table)
+    .select('*')
+    .eq(fk, ownerId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data.map((row) => toLocal(row, fk))
+}
+
+export async function uploadAttachment(ownerId, file, kind = 'transaction') {
+  const { table, fk, prefix } = ownerConfig(kind)
   const ext = file.name.includes('.') ? file.name.split('.').pop() : ''
-  const path = `${transactionId}/${crypto.randomUUID()}${ext ? `.${ext}` : ''}`
+  const path = `${prefix}${ownerId}/${crypto.randomUUID()}${ext ? `.${ext}` : ''}`
 
   const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file, {
     contentType: file.type,
@@ -35,9 +53,9 @@ export async function uploadAttachment(transactionId, file) {
   if (uploadError) throw uploadError
 
   const { data, error: insertError } = await supabase
-    .from('transaction_attachments')
+    .from(table)
     .insert({
-      transaction_id: transactionId,
+      [fk]: ownerId,
       path,
       file_name: file.name,
       file_type: file.type,
@@ -50,19 +68,12 @@ export async function uploadAttachment(transactionId, file) {
     throw insertError
   }
 
-  return {
-    id: data.id,
-    transactionId: data.transaction_id,
-    path: data.path,
-    fileName: data.file_name,
-    fileType: data.file_type,
-    createdAt: data.created_at,
-    url: supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl,
-  }
+  return toLocal(data, fk)
 }
 
-export async function deleteAttachment(attachment) {
+export async function deleteAttachment(attachment, kind = 'transaction') {
+  const { table } = ownerConfig(kind)
   await supabase.storage.from(BUCKET).remove([attachment.path])
-  const { error } = await supabase.from('transaction_attachments').delete().eq('id', attachment.id)
+  const { error } = await supabase.from(table).delete().eq('id', attachment.id)
   if (error) throw error
 }

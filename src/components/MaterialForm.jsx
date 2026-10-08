@@ -5,6 +5,8 @@ import { useMaterialModal } from '../context/MaterialModalContext'
 import { useData } from '../context/DataContext'
 import { MATERIAL_TYPES, defaultUnitFor } from '../lib/materials'
 import { todayKey } from '../lib/dateUtils'
+import { listAttachments } from '../lib/attachments'
+import AttachmentPicker from './AttachmentPicker'
 
 export default function MaterialForm() {
   const { formState, close } = useMaterialModal()
@@ -22,6 +24,8 @@ export default function MaterialForm() {
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [savedLog, setSavedLog] = useState(null)
+  const [attachments, setAttachments] = useState([])
   const qtyRef = useRef(null)
 
   const material = MATERIAL_TYPES.find((m) => m.id === materialId) ?? MATERIAL_TYPES[0]
@@ -37,6 +41,11 @@ export default function MaterialForm() {
     setNote(log?.note || '')
     setError('')
     setSubmitting(false)
+    setSavedLog(log || null)
+    setAttachments([])
+    if (log) {
+      listAttachments(log.id, 'material').then(setAttachments).catch(() => {})
+    }
     const t = setTimeout(() => qtyRef.current?.focus(), 100)
     return () => clearTimeout(t)
   }, [formState, log])
@@ -63,9 +72,17 @@ export default function MaterialForm() {
     setSubmitting(true)
     const payload = { personId, materialId, direction, quantity: numQty, unit, date, note }
 
-    const success = isEdit ? await updateLog(log.id, payload) : await addLog(payload)
+    if (isEdit) {
+      const success = await updateLog(log.id, payload)
+      setSubmitting(false)
+      if (success) close()
+      else setError('Failed to save. Check your connection.')
+      return
+    }
+
+    const created = await addLog(payload)
     setSubmitting(false)
-    if (success) close()
+    if (created) setSavedLog(created)
     else setError('Failed to save. Check your connection.')
   }
 
@@ -87,7 +104,7 @@ export default function MaterialForm() {
       <form
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
-        className="w-full max-w-md rounded-t-2xl bg-[var(--surface-1)] p-5 shadow-[var(--shadow-lg)] sm:rounded-2xl animate-slide-up"
+        className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-[var(--surface-1)] p-5 shadow-[var(--shadow-lg)] sm:rounded-2xl animate-slide-up"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">
@@ -197,19 +214,30 @@ export default function MaterialForm() {
           />
         </label>
 
-        {/* Note */}
+        {/* Notes */}
         <label className="mb-4 block">
           <span className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[var(--text-muted)]">
-            Note (optional)
+            Notes (optional)
           </span>
-          <input
-            type="text"
+          <textarea
+            rows={3}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g. From ABC Supplier"
-            className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-3)] px-4 py-3 text-[var(--text-primary)] outline-none focus:border-[var(--accent)] transition-colors"
+            placeholder="e.g. From ABC Supplier, truck no. GJ-01-AB-1234"
+            className="w-full resize-none rounded-xl border border-[var(--border)] bg-[var(--surface-3)] px-4 py-3 text-[var(--text-primary)] outline-none focus:border-[var(--accent)] transition-colors"
           />
         </label>
+
+        {/* Photos — available once the entry exists (after first save, or when editing) */}
+        {savedLog && (
+          <AttachmentPicker
+            ownerId={savedLog.id}
+            kind="material"
+            attachments={attachments}
+            onChange={setAttachments}
+            disabled={submitting}
+          />
+        )}
 
         {error && <p className="mb-3 text-sm font-medium text-[var(--critical)]">{error}</p>}
 
@@ -225,15 +253,26 @@ export default function MaterialForm() {
               <Trash2 size={18} />
             </button>
           )}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl py-3.5 font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-[0.97] disabled:opacity-70"
-            style={{ backgroundColor: direction === 'in' ? 'var(--good)' : 'var(--critical)' }}
-          >
-            {submitting && <Loader2 size={16} className="animate-spin" />}
-            {isEdit ? 'Save Changes' : 'Add Entry'}
-          </button>
+          {!isEdit && savedLog ? (
+            <button
+              type="button"
+              onClick={close}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl py-3.5 font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-[0.97]"
+              style={{ backgroundColor: direction === 'in' ? 'var(--good)' : 'var(--critical)' }}
+            >
+              Done
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl py-3.5 font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-[0.97] disabled:opacity-70"
+              style={{ backgroundColor: direction === 'in' ? 'var(--good)' : 'var(--critical)' }}
+            >
+              {submitting && <Loader2 size={16} className="animate-spin" />}
+              {isEdit ? 'Save Changes' : 'Add Entry'}
+            </button>
+          )}
         </div>
       </form>
     </div>

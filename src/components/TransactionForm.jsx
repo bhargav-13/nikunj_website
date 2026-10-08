@@ -219,7 +219,7 @@ export default function TransactionForm() {
         {/* Attachments — available once the entry exists (after first save, or when editing) */}
         {savedTx && (
           <AttachmentPicker
-            transactionId={savedTx.id}
+            ownerId={savedTx.id}
             attachments={attachments}
             onChange={setAttachments}
             disabled={submitting}
